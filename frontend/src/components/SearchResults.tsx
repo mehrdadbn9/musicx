@@ -1,4 +1,4 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import {
   ChevronLeft,
   Disc3,
@@ -62,23 +62,55 @@ function TrackList({
   downloadable,
   onPick,
   onSearchQuery,
+  onReorder,
 }: {
   items: SearchResult[]
   downloadable?: boolean
   onPick: Props['onPick']
   onSearchQuery: Props['onSearchQuery']
+  onReorder?: (from: number, to: number) => void
 }) {
   // Which track's "more like this" panel is open, keyed by dedup_key.
   const [expanded, setExpanded] = useState<string | null>(null)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [overIndex, setOverIndex] = useState<number | null>(null)
   return (
     <ul className="stagger">
       {items.map((item, i) => (
         <li
           key={item.dedup_key}
+          draggable={!!onReorder}
+          onDragStart={() => setDragIndex(i)}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setOverIndex(i)
+          }}
+          onDrop={() => {
+            if (onReorder && dragIndex !== null && dragIndex !== i) onReorder(dragIndex, i)
+            setDragIndex(null)
+            setOverIndex(null)
+          }}
+          onDragEnd={() => {
+            setDragIndex(null)
+            setOverIndex(null)
+          }}
           style={stagger(i)}
-          className="group transition-colors hover:bg-ink-800/60 focus-within:bg-ink-800/60"
+          className={clsx(
+            'group transition-colors hover:bg-ink-800/60 focus-within:bg-ink-800/60',
+            dragIndex === i && 'opacity-40',
+            overIndex === i && dragIndex !== null && 'outline-1 outline-lime-flash',
+          )}
         >
           <div className="flex items-center gap-3 pe-5">
+            {onReorder && (
+              <span
+                className="cursor-grab select-none px-1 text-ink-600 hover:text-ink-300 active:cursor-grabbing"
+                title="Drag to reorder"
+                aria-label="Drag to reorder"
+              >
+                ⠿
+              </span>
+            )}
             <button
               onClick={() => onPick(item)}
               className="flex min-w-0 flex-1 items-center gap-4 py-2.5 ps-5 text-start focus-visible:outline-none"
@@ -219,6 +251,11 @@ export function SearchResults({
   onSearchQuery,
 }: Props) {
   const [tab, setTab] = useState<Tab>('all')
+  // Local drag-reorder of the track list. Stored as an ordered list of
+  // dedup_keys; null means "use the provider order". Reset whenever the
+  // underlying results change so a fresh search starts un-reordered.
+  const [trackOrder, setTrackOrder] = useState<string[] | null>(null)
+  useEffect(() => setTrackOrder(null), [results])
 
   const grouped = useMemo(() => {
     const map = new Map<ResultKind, SearchResult[]>()
@@ -306,6 +343,14 @@ export function SearchResults({
         .map(({ kind, label, icon: Icon, preview }) => {
           const items = grouped.get(kind)!
           const shown = tab === 'all' ? items.slice(0, preview) : items
+          // Apply the user's drag order to the track list (others stay as-is).
+          const ordered =
+            kind === 'track' && trackOrder
+              ? [...shown].sort(
+                  (a, b) =>
+                    trackOrder.indexOf(a.dedup_key) - trackOrder.indexOf(b.dedup_key),
+                )
+              : shown
           const hidden = items.length - shown.length
           return (
             <div key={kind} className="border-b border-ink-800 last:border-b-0">
@@ -313,6 +358,15 @@ export function SearchResults({
                 <h3 className="flex items-center gap-2 text-micro font-semibold text-ink-400">
                   <Icon className="size-3.5" />
                   {label}
+                  {kind === 'track' && trackOrder && (
+                    <button
+                      onClick={() => setTrackOrder(null)}
+                      className="ms-2 rounded-full px-2 py-0.5 text-[10px] font-medium text-ink-500 transition hover:bg-ink-800 hover:text-ink-200"
+                      title="Reset to default order"
+                    >
+                      reset
+                    </button>
+                  )}
                 </h3>
                 {hidden > 0 && (
                   <button
@@ -327,10 +381,21 @@ export function SearchResults({
               {kind === 'track' || kind === 'playlist' ? (
                 <div className="pb-2">
                   <TrackList
-                    items={shown}
+                    items={ordered}
                     downloadable={kind === 'track'}
                     onPick={onPick}
                     onSearchQuery={onSearchQuery}
+                    onReorder={
+                      kind === 'track'
+                        ? (from, to) => {
+                            const base = shown.map((t) => t.dedup_key)
+                            const next = [...base]
+                            const [moved] = next.splice(from, 1)
+                            next.splice(to, 0, moved)
+                            setTrackOrder(next)
+                          }
+                        : undefined
+                    }
                   />
                 </div>
               ) : (
