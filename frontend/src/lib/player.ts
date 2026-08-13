@@ -521,6 +521,39 @@ export function toggleRepeat() {
   set({ repeat: next })
 }
 
+/** Reorder the queue by moving the item at `from` to position `to`.
+ *
+ *  Both indices are absolute queue positions (including the currently
+ *  playing track at `state.index`). Used by drag-and-drop in the Now Playing
+ *  queue so the user can build and edit their own playback order. */
+export function reorderQueue(from: number, to: number) {
+  if (
+    from < 0 ||
+    to < 0 ||
+    from >= state.queue.length ||
+    to >= state.queue.length ||
+    from === to
+  )
+    return
+  const queue = [...state.queue]
+  const [moved] = queue.splice(from, 1)
+  queue.splice(to, 0, moved)
+  // Keep the currently playing track pinned: its position may have shifted,
+  // so track which item that was and restore its index.
+  const playingId = state.queue[state.index]?.id
+  const newIndex = queue.findIndex((q) => q.id === playingId)
+  set({ queue, index: newIndex >= 0 ? newIndex : state.index })
+  persist()
+}
+
+/** Move a track to the front of the queue (becomes the next played track
+ *  once the current one ends). `id` is a queue item id. */
+export function moveToFirst(id: string) {
+  const from = state.queue.findIndex((q) => q.id === id)
+  if (from < 0) return
+  reorderQueue(from, state.index + 1)
+}
+
 /** Stop and clear — the bar's close button. */
 export function stop() {
   const el = ensureAudio()

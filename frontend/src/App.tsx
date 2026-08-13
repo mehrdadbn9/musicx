@@ -569,6 +569,14 @@ function Shell() {
               focusPulse={focusPulse}
             />
 
+            {/* Recent searches sit directly under the search bar — the first
+                thing to click on a cold start, not buried at the page end. */}
+            <RecentSearches
+              items={recent}
+              onPick={handleSubmit}
+              onClear={() => setRecent(clearRecentSearches())}
+            />
+
             {/* The shortcut hint is a discovery aid and the chips are a
                 cold-start affordance — both belong to the empty page only. */}
             <Collapsible open={landing}>
@@ -622,11 +630,6 @@ function Shell() {
                 </kbd>{' '}
                 to search, or paste a link anywhere on the page.
               </p>
-              <RecentSearches
-                items={recent}
-                onPick={handleSubmit}
-                onClear={() => setRecent(clearRecentSearches())}
-              />
             </Collapsible>
 
             {error && (

@@ -12,6 +12,8 @@ import {
   formatTime,
   toggleLiked,
   isLiked,
+  reorderQueue,
+  moveToFirst,
 } from '../lib/player'
 import { usePlayer } from '../lib/usePlayer'
 import { useLyrics } from '../lib/lyrics'
@@ -24,6 +26,8 @@ export function NowPlaying({ open, onClose }: { open: boolean; onClose: () => vo
   const [dragY, setDragY] = useState(0)
   const [lyricsOpen, setLyricsOpen] = useState(true)
   const [queueOpen, setQueueOpen] = useState(false)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
+  const [overIndex, setOverIndex] = useState<number | null>(null)
   const lyrics = useLyrics(state.queue[state.index]?.title || '', state.queue[state.index]?.artist || '')
   const progressRef = useRef<HTMLDivElement>(null)
   const handleRef = useRef<HTMLDivElement>(null)
@@ -128,7 +132,7 @@ export function NowPlaying({ open, onClose }: { open: boolean; onClose: () => vo
               onClick={() => { setQueueOpen(true); setLyricsOpen(false) }}
               className={clsx('flex-1 py-3 text-mini font-medium border-b-2 transition', queueOpen ? 'border-lime-flash text-lime-flash' : 'border-transparent text-ink-400 hover:text-ink-100')}
             >
-              <ListMusic className="size-4 inline mr-1" /> Queue ({state.queue.length - state.index - 1})
+              <ListMusic className="size-4 inline mr-1" /> Queue ({state.queue.length})
             </button>
           </div>
 
@@ -180,42 +184,90 @@ export function NowPlaying({ open, onClose }: { open: boolean; onClose: () => vo
 
             {queueOpen && (
               <div className="mt-4 max-w-md mx-auto">
-                {state.queue.length <= state.index + 1 ? (
+                {state.queue.length === 0 ? (
                   <div className="text-center text-ink-500 py-8">
                     <ListMusic className="size-12 mx-auto mb-2 text-ink-600" />
                     <p>Queue is empty</p>
                     <p className="text-mini mt-1">Play more music to build your queue</p>
                   </div>
                 ) : (
-                  <ul className="space-y-2">
-                    {state.queue.slice(state.index + 1).map((item, i) => (
-                      <li
-                        key={item.id}
-                        className={clsx(
-                          'flex items-center gap-3 rounded-btn border p-2 transition',
-                          item.suggested ? 'border-lime-flash/30 bg-lime-flash/5' : 'border-ink-800 bg-ink-900 hover:border-ink-700'
-                        )}
-                      >
-                        <span className="text-mini text-ink-500 w-6 text-right font-mono tabular-nums">{i + 1}</span>
-                        {item.cover ? (
-                          <img src={item.cover} alt="" className="size-10 rounded-ctl object-cover" />
-                        ) : (
-                          <div className="size-10 rounded-ctl bg-ink-800 flex items-center justify-center">
-                            <Mic className="size-4 text-ink-600" />
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1" dir="auto">
-                          <p className="truncate text-sm font-medium text-ink-100">{item.title}</p>
-                          <p className="truncate text-mini text-ink-500">{item.artist}</p>
-                        </div>
-                        {item.suggested && (
-                          <span className="text-micro text-lime-flash px-1.5 py-0.5 rounded-full bg-lime-flash/10">
-                            Suggested
-                          </span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <p className="text-micro text-ink-500 mb-2 text-center">
+                      Drag to reorder · “Play first” sends a track to the top of what's next
+                    </p>
+                    <ul className="space-y-2">
+                      {state.queue.map((item, i) => {
+                        const isCurrent = i === state.index
+                        return (
+                          <li
+                            key={item.id}
+                            draggable
+                            onDragStart={() => setDragIndex(i)}
+                            onDragOver={(e) => {
+                              e.preventDefault()
+                              setOverIndex(i)
+                            }}
+                            onDrop={() => {
+                              if (dragIndex !== null && dragIndex !== i) reorderQueue(dragIndex, i)
+                              setDragIndex(null)
+                              setOverIndex(null)
+                            }}
+                            onDragEnd={() => {
+                              setDragIndex(null)
+                              setOverIndex(null)
+                            }}
+                            className={clsx(
+                              'flex items-center gap-3 rounded-btn border p-2 transition',
+                              isCurrent
+                                ? 'border-lime-flash/60 bg-lime-flash/10'
+                                : item.suggested
+                                  ? 'border-lime-flash/30 bg-lime-flash/5'
+                                  : 'border-ink-800 bg-ink-900 hover:border-ink-700',
+                              dragIndex === i && 'opacity-40',
+                              overIndex === i && dragIndex !== null && 'border-lime-flash'
+                            )}
+                          >
+                            <span
+                              className="cursor-grab active:cursor-grabbing text-ink-600 hover:text-ink-300 select-none px-1"
+                              title="Drag to reorder"
+                              aria-label="Drag to reorder"
+                            >
+                              ⠿
+                            </span>
+                            <span className="text-mini text-ink-500 w-6 text-right font-mono tabular-nums">
+                              {isCurrent ? '▶' : i + 1}
+                            </span>
+                            {item.cover ? (
+                              <img src={item.cover} alt="" className="size-10 rounded-ctl object-cover" />
+                            ) : (
+                              <div className="size-10 rounded-ctl bg-ink-800 flex items-center justify-center">
+                                <Mic className="size-4 text-ink-600" />
+                              </div>
+                            )}
+                            <div className="min-w-0 flex-1" dir="auto">
+                              <p className="truncate text-sm font-medium text-ink-100">{item.title}</p>
+                              <p className="truncate text-mini text-ink-500">{item.artist}</p>
+                            </div>
+                            {item.suggested && (
+                              <span className="text-micro text-lime-flash px-1.5 py-0.5 rounded-full bg-lime-flash/10">
+                                Suggested
+                              </span>
+                            )}
+                            {!isCurrent && (
+                              <button
+                                onClick={() => moveToFirst(item.id)}
+                                className="tap-target text-micro rounded-ctl px-2 py-1 text-ink-400 transition hover:bg-ink-800 hover:text-lime-flash"
+                                title="Play this next"
+                                aria-label={`Play ${item.title} next`}
+                              >
+                                Play first
+                              </button>
+                            )}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </>
                 )}
               </div>
             )}
