@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- viewport-fit=cover lets the app paint behind the notch and the home
+         indicator, which is what an installed PWA should look like. It also
+         makes env(safe-area-inset-*) report real values — everything pinned
+         to an edge (the dock FAB, toasts, the footer) pads itself with them. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <title>MusicX — every song, one search</title>
+    <meta
+      name="description"
+      content="Paste a Spotify, YouTube, SoundCloud, Apple Music or Deezer link — or search every catalog at once — and download tagged MP3s at the quality you pick, or stream them in-browser. Free, no account."
+    />
+    <meta name="theme-color" content="#0b0a10" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MusicX" />
+
+    <!-- Icons -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Open Graph / Twitter. When deploying, replace the og:url and og:image
+         values with absolute URLs on your domain — scrapers need them. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MusicX" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content="MusicX — every song, one search" />
+    <meta
+      property="og:description"
+      content="Paste a Spotify, YouTube, SoundCloud, Apple Music or Deezer link — or search every catalog at once — and download tagged MP3s, or stream them in-browser. Free, no account."
+    />
+    <meta property="og:image" content="/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MusicX — every song, one search" />
+    <meta
+      name="twitter:description"
+      content="Paste a Spotify, YouTube, SoundCloud, Apple Music or Deezer link — or search every catalog at once — and download tagged MP3s, or stream them in-browser. Free, no account."
+    />
+    <meta name="twitter:image" content="/og.png" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "MusicX",
+        "applicationCategory": "MultimediaApplication",
+        "operatingSystem": "Web",
+        "inLanguage": "en",
+        "description": "Paste a Spotify, YouTube, SoundCloud, Apple Music or Deezer link — or search every catalog at once — and download tagged MP3s, or stream them in-browser. Free, no account.",
+        "offers": { "@type": "Offer", "price": "0" }
+      }
+    </script>
+
+    <!-- Self-hosted Inter (docs/DESIGN.md): preload exactly the weights the UI
+         uses. hrefs must match the url()s in index.css byte-for-byte, and font
+         preloads need crossorigin even same-origin, or they download twice.
+         Vazirmatn stays behind Inter for Persian glyphs and loads on demand. -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/Inter-400.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/Inter-500.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/Inter-600.woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/fonts/Inter-700.woff2"
+      crossorigin
+    />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+[project]
+name = "musicx-api"
+version = "0.0.1"
+requires-python = ">=3.12"
+dependencies = [
+    # Installs as a yt-dlp plugin: it needs no import, and does nothing until
+    # POT_PROVIDER_URL names a provider for it to ask. See app/ytdlp.py.
+    "bgutil-ytdlp-pot-provider>=1.3.1",
+    "fastapi>=0.139.0",
+    "mutagen>=1.48.1",
+    "uvicorn[standard]>=0.51.0",
+    "yt-dlp>=2026.7.4",
+]
+
+# The ML stack is 670 MB of image (1.82 GB with it, 1.15 GB without) and
+# belongs to one optional feature, so it is an extra rather than a dependency. The published image includes it; a lean
+# build (`--build-arg WITH_RECOMMENDER=0`) leaves it out and the recommender
+# reports itself unavailable, exactly as it does with no dataset installed.
+# app/recommender.py imports these inside its functions, never at module scope.
+[project.optional-dependencies]
+recommend = [
+    "numpy>=2.1",
+    "pandas>=2.2",
+    "scikit-learn>=1.5",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.5.0",
+    "pytest>=8.4.2",
+]

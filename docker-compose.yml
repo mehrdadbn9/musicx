@@ -1,0 +1,136 @@
+# MusicX, self-hosted:  docker compose up -d  →  http://localhost:8080
+#
+# Works on a fresh clone with no .env. The defaults here are not the ones in
+# the code — the code protects a server shared with strangers, this file
+# assumes your machine and your music. See compose.dokploy.yml for the other
+# case, and docs/DESIGN.md for why they differ.
+
+services:
+  frontend:
+    # Pulled if published, built from source if not. `--build` forces local.
+    image: musicx-frontend:latest
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      # The only port anything needs: nginx serves the app and proxies /api.
+      - "${MUSICX_PORT:-8080}:80"
+    depends_on:
+      - api
+    # nginx serving a static bundle measures at ~6 MB; 128 MB is pure ceiling
+    # so a runaway can never take the host with it. Reservation is what the
+    # scheduler guarantees it — see the api service for the full rationale.
+    deploy:
+      resources:
+        limits:
+          memory: ${FRONTEND_MEM_LIMIT:-128m}
+        reservations:
+          memory: 24m
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  # Mints the proof-of-origin tokens YouTube asks datacenter IPs for. Free,
+  # keyless, stateless. From a home connection you almost certainly don't need
+  # it; it costs nothing idle and saves a bad afternoon if that ever changes.
+  pot-provider:
+    image: brainicism/bgutil-ytdlp-pot-provider:latest
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: ${POT_MEM_LIMIT:-256m}
+        reservations:
+          memory: 64m
+    logging: *logging
+
+  api:
+    image: musicx-api:latest
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      - pot-provider
+    # Headroom, deliberately generous. The API idles at ~250 MB and barely
+    # moves under a stream (proxying bytes, not transcoding), but a batch of
+    # parallel downloads each run ffmpeg, and the recommender holds the 28k-row
+    # matrix in memory. 1 GB is a ceiling none of that reaches, not a target;
+    # a leak or a runaway job is stopped here instead of taking the host down.
+    # The reservation is the floor the scheduler keeps free for it, so the app
+    # never starts starved. Both are env-overridable for a smaller box —
+    # e.g. API_MEM_LIMIT=512m on a 1 GB VPS.
+    deploy:
+      resources:
+        limits:
+          memory: ${API_MEM_LIMIT:-1g}
+        reservations:
+          memory: ${API_MEM_RESERVATION:-256m}
+    environment:
+      # 0 = keep downloads forever, no disk ceiling. The code defaults to 24h
+      # and 20 GB, which is right for a public server and wrong for a folder
+      # you browse.
+      - DOWNLOADS_TTL_HOURS=${DOWNLOADS_TTL_HOURS:-0}
+      - MAX_DOWNLOADS_GB=${MAX_DOWNLOADS_GB:-0}
+
+      # The per-caller limits price one stranger's share of a server. There
+      # are no strangers here. Turn this back on for anything reachable by
+      # someone you don't know — wrong admin tokens stay charged either way.
+      - RATE_LIMITS_ENABLED=${RATE_LIMITS_ENABLED:-false}
+      # Different class: these bound threads and memory, not anyone's share.
+      # 0 = no limit, which is what a 900-track discography needs.
+      - MAX_ACTIVE_JOBS_PER_CLIENT=${MAX_ACTIVE_JOBS_PER_CLIENT:-0}
+      - MAX_TRACKS_PER_JOB=${MAX_TRACKS_PER_JOB:-0}
+      # Raising this finishes a long album sooner and gets you bot-checked
+      # sooner, in that order.
+      - DOWNLOAD_WORKERS=${DOWNLOAD_WORKERS:-3}
+
+      # Owner of everything written to DOWNLOADS_DIR. 1001 is the image's own
+      # user; use `id -u` / `id -g` if you want to open those files yourself.
+      # Docker Desktop maps ownership for you, so macOS and Windows can skip it.
+      - PUID=${PUID:-1001}
+      - PGID=${PGID:-1001}
+
+      # Without the solver yt-dlp has a runtime and nothing to run in it, and
+      # YouTube returns videos with no audio streams. Empty string refuses it.
+      - YTDLP_REMOTE_COMPONENTS=${YTDLP_REMOTE_COMPONENTS-ejs:github}
+      - YTDLP_CACHE_DIR=/app/cache
+      - POT_PROVIDER_URL=${POT_PROVIDER_URL:-http://pot-provider:4416}
+      # Rarely needed at home. Setting it without mounting a file does
+      # nothing; see .env.example.
+      - YTDLP_COOKIEFILE=${YTDLP_COOKIEFILE:-}
+
+      # Egress proxy for the datacenter-IP block. On a VPS, YouTube answers a
+      # flagged address with LOGIN_REQUIRED and neither cookies nor the token
+      # provider can reach past it — routing through a residential/ISP proxy is
+      # the only reliable fix. Empty = direct (correct at home). HTTPS_PROXY
+      # also reaches the media fetch in /api/stream; YTDLP_PROXY overrides just
+      # yt-dlp. SoundCloud needs neither.
+      - HTTPS_PROXY=${HTTPS_PROXY:-}
+      - YTDLP_PROXY=${YTDLP_PROXY:-}
+
+      # Off unless you set a token, and local either way — counted into a
+      # SQLite file below and read back only by /admin on this instance.
+      - ADMIN_TOKEN=${ADMIN_TOKEN:-}
+      - ANALYTICS_UTC_OFFSET_MINUTES=${ANALYTICS_UTC_OFFSET_MINUTES:-0}
+      - ANALYTICS_RETENTION_DAYS=${ANALYTICS_RETENTION_DAYS:-90}
+
+      # "More like this" — off until the Kaggle CSV is in DATASET_DIR, and
+      # nothing else changes when it isn't. See backend/dataset/README.md.
+      - RECOMMEND_DATASET_PATH=/app/dataset/tcc_ceds_music.csv
+    volumes:
+      # A real folder, because the point of running this yourself is that the
+      # files are yours. Point it at an external disk or whatever your music
+      # player watches.
+      - ${DOWNLOADS_DIR:-./downloads}:/app/downloads
+      # Named volumes: nothing you would open by hand, and both only ever
+      # want to be where they were.
+      - analytics:/app/data
+      - ytdlp-cache:/app/cache
+      # Read-only, and empty on a fresh clone: the recommender dataset is
+      # licensed on Kaggle rather than shipped here.
+      - ${DATASET_DIR:-./backend/dataset}:/app/dataset:ro
+    logging: *logging
+
+volumes:
+  analytics:
+  ytdlp-cache:
