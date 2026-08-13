@@ -201,16 +201,15 @@ export function NowPlaying({ open, onClose }: { open: boolean; onClose: () => vo
                         return (
                           <li
                             key={item.id}
-                            draggable
-                            onDragStart={() => setDragIndex(i)}
                             onDragOver={(e) => {
                               e.preventDefault()
                               setOverIndex(i)
                             }}
-                            onDrop={() => {
+                            onDrop={(e) => {
                               if (dragIndex !== null && dragIndex !== i) reorderQueue(dragIndex, i)
                               setDragIndex(null)
                               setOverIndex(null)
+                              e.preventDefault()
                             }}
                             onDragEnd={() => {
                               setDragIndex(null)
@@ -228,6 +227,12 @@ export function NowPlaying({ open, onClose }: { open: boolean; onClose: () => vo
                             )}
                           >
                             <span
+                              draggable
+                              onDragStart={(e) => {
+                                e.dataTransfer.effectAllowed = 'move'
+                                e.dataTransfer.setData('text/plain', String(i))
+                                setDragIndex(i)
+                              }}
                               className="cursor-grab active:cursor-grabbing text-ink-600 hover:text-ink-300 select-none px-1"
                               title="Drag to reorder"
                               aria-label="Drag to reorder"

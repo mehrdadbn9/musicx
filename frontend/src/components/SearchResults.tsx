@@ -79,16 +79,16 @@ function TrackList({
       {items.map((item, i) => (
         <li
           key={item.dedup_key}
-          draggable={!!onReorder}
-          onDragStart={() => setDragIndex(i)}
           onDragOver={(e) => {
+            if (!onReorder) return
             e.preventDefault()
             setOverIndex(i)
           }}
-          onDrop={() => {
+          onDrop={(e) => {
             if (onReorder && dragIndex !== null && dragIndex !== i) onReorder(dragIndex, i)
             setDragIndex(null)
             setOverIndex(null)
+            e.preventDefault()
           }}
           onDragEnd={() => {
             setDragIndex(null)
@@ -104,6 +104,12 @@ function TrackList({
           <div className="flex items-center gap-3 pe-5">
             {onReorder && (
               <span
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = 'move'
+                  e.dataTransfer.setData('text/plain', String(i))
+                  setDragIndex(i)
+                }}
                 className="cursor-grab select-none px-1 text-ink-600 hover:text-ink-300 active:cursor-grabbing"
                 title="Drag to reorder"
                 aria-label="Drag to reorder"
