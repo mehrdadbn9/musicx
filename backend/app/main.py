@@ -275,6 +275,110 @@ def search(request: Request, q: str, page: int = 0) -> dict:
     }
 
 
+# ---------------------------------------------------------------------------
+# AI Vibe DJ — free, keyless LLM (OpenRouter free tier) turns a plain-language
+# vibe into a mood profile + a real catalog search. No paid Gemini key needed;
+# the model call is server-side so the key never reaches the browser. If the
+# model is unreachable we fall back to an on-device keyword classifier.
+# ---------------------------------------------------------------------------
+import json as _json
+import urllib.request as _urllib_request
+import urllib.error as _urllib_error
+
+_DJ_MODEL_CANDIDATES = [
+    "liquid/lfm-2.5-2.6b:free",
+    "openai/gpt-oss-20b:free",
+    "nvidia/nemotron-nano-9b-v2:free",
+]
+
+
+def _dj_classify_offline(vibe: str) -> dict:
+    """Keyword fallback — mirrors the client classifier; always works."""
+    v = vibe.lower()
+    energy = "mid"
+    genres = []
+    if any(w in v for w in ["gym", "workout", "run", "phonk", "party", "club", "rock", "metal", "hype", "pump"]):
+        energy = "high"
+    if any(w in v for w in ["sleep", "calm", "chill", "relax", "study", "focus", "sad", "rain"]):
+        energy = "low"
+    for g, pat in {
+        "phonk": r"phonk", "lo-fi": r"lo[-\s]?fi", "house": r"house",
+        "amapiano": r"amapiano", "edm": r"edm|electronic|techno", "rock": r"rock",
+        "jazz": r"jazz", "piano": r"piano", "pop": r"pop", "hiphop": r"hip[-\s]?hop|rap",
+        "afro": r"afro", "ambient": r"ambient", "r&b": r"r\s*&\s*b",
+    }.items():
+        if re.search(pat, v):
+            genres.append(g)
+    query = genres[0] if genres else " ".join(vibe.split()[:3])
+    bpm = "150–180" if energy == "high" else "60–80" if energy == "low" else "90–110"
+    return {"energy": energy, "genres": genres or ["mixed"], "query": query, "bpm": bpm,
+            "eq": "Punchy low-end" if energy == "high" else "Soft highs" if energy == "low" else "Balanced"}
+
+
+def _dj_classify_llm(vibe: str) -> dict | None:
+    key = os.environ.get("HERMES_CUSTOM_OPENROUTER_AI_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
+    if not key:
+        return None
+    prompt = (
+        "You are a music DJ. Given a vibe, output ONLY a JSON object with keys: "
+        "energy (low|mid|high), genres (array of 1-3 genre words), query (a 1-3 word "
+        "search query for a music catalog), bpm (string), eq (short tip). "
+        f"Vibe: {vibe!r}. Respond with JSON only, no prose."
+    )
+    for model in _DJ_MODEL_CANDIDATES:
+        body = _json.dumps({
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 700,
+        }).encode()
+        req = _urllib_request.Request(
+            "https://openrouter.ai/api/v1/chat/completions",
+            data=body,
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+        )
+        try:
+            with _urllib_request.urlopen(req, timeout=45) as r:
+                msg = _json.load(r)["choices"][0]["message"]
+                text = msg.get("content") or msg.get("reasoning") or ""
+        except Exception:
+            continue
+        m = re.search(r"\{.*\}", text, re.S)
+        if not m:
+            continue
+        try:
+            data = _json.loads(m.group(0))
+        except Exception:
+            continue
+        if isinstance(data.get("query"), str) and data["query"].strip():
+            return {
+                "energy": data.get("energy", "mid"),
+                "genres": data.get("genres") or ["mixed"],
+                "query": data["query"].strip(),
+                "bpm": str(data.get("bpm", "")),
+                "eq": str(data.get("eq", "")),
+                "model": model,
+            }
+    return None
+
+
+@app.get("/api/dj")
+def dj(request: Request, q: str) -> dict:
+    q = (q or "").strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="Empty vibe")
+    limits.enforce("search", request)
+    profile = _dj_classify_llm(q) or _dj_classify_offline(q)
+    try:
+        results, has_more = search_any(profile["query"], 0)
+    except ProviderError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return {
+        "profile": profile,
+        "results": [asdict(r) | {"dedup_key": dedup_key(r)} for r in results],
+        "has_more": has_more,
+    }
+
+
 @app.get("/api/artist/{artist_id}")
 def artist(request: Request, artist_id: str) -> dict:
     if not artist_id.isdigit():

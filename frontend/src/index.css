@@ -384,6 +384,22 @@ body::before {
   color: transparent;
 }
 
+/* AI Vibe DJ — Gemini-style glass hero + mix card */
+.dj-hero {
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in oklab, #a855f7 22%, transparent), transparent 60%),
+    radial-gradient(120% 140% at 100% 0%, color-mix(in oklab, #f472b6 18%, transparent), transparent 55%),
+    color-mix(in oklab, var(--color-ink-900) 70%, transparent);
+  border: 1px solid color-mix(in oklab, #a855f7 26%, var(--color-ink-700));
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 40px -14px color-mix(in oklab, #a855f7 50%, transparent);
+}
+.dj-mix-card {
+  background: color-mix(in oklab, var(--color-ink-900) 72%, transparent);
+  border: 1px solid color-mix(in oklab, #a855f7 24%, var(--color-ink-700));
+  backdrop-filter: blur(8px);
+}
+
 /* A soft violet halo for the one primary action per surface, so it reads as
    lit rather than merely coloured. */
 .accent-glow {

@@ -88,20 +88,42 @@ def _is_direct_media(url: str | None) -> bool:
 def resolve_audio_url(track: Track) -> str:
     """The direct media URL for `track`, resolved the way a download would.
 
-    Uses the track's own page when it has one, otherwise the same search the
-    downloader runs — so what plays is what would have been downloaded.
+    Ordered fallback so a track always plays something rather than 502:
+
+    1. A directly-playable `source_url` (a YouTube/SoundCloud page) is
+       extracted the normal way.
+    2. Otherwise the same search the downloader runs finds a full-length
+       upload (YouTube / SoundCloud).
+    3. If both fail — which on a datacenter IP means YouTube is bot-blocking —
+       a Deezer/Apple `preview_url` CDN clip is returned instead. It is a
+       short clip, but it is directly fetchable from the server and means the
+       player never hits a hard failure when a full-length source is blocked.
     """
     key = track.source_url or track.query
+
+    # 1. A directly-playable source page (YouTube/SoundCloud) — extract it.
+    if _is_direct_media(track.source_url):
+        cached = _cached(key)
+        if cached:
+            return cached
+        url = _extract(track.source_url)
+        _remember(key, url)
+        return url
+
+    # 2. Full-length resolve via the downloader's search (YouTube etc.).
     cached = _cached(key)
     if cached:
         return cached
+    try:
+        url = _resolve_full_length(track)
+        _remember(key, url)
+        return url
+    except StreamError:
+        # YouTube is bot-blocked from this IP, or the search found nothing.
+        # Fall through to the preview clip rather than failing the request.
+        pass
 
-    # A Deezer CDN preview (or any directly-playable CDN clip) is already
-    # audio — proxy it instead of running yt-dlp, which would resolve a 30s
-    # clip anyway and, on a datacenter IP, get bot-blocked into a 502.
-    if _is_direct_media(track.source_url):
-        _remember(key, track.source_url)
-        return track.source_url
+    # 3. Deezer/Apple preview CDN — short but directly playable from here.
     if _is_direct_media(track.preview_url):
         pkey = f"preview:{track.preview_url}"
         pcached = _cached(pkey)
@@ -110,39 +132,56 @@ def resolve_audio_url(track: Track) -> str:
         _remember(pkey, track.preview_url)
         return track.preview_url
 
-    # Imported here to keep the module import cheap and to avoid a cycle:
-    # downloader imports nothing from this file, and this needs its search.
-    from .downloader import DownloadError, search_source
+    raise StreamError("no playable source or preview for this track")
 
-    page_url = track.source_url
-    if not page_url:
-        try:
-            page_url = search_source(track)
-        except DownloadError as exc:
-            raise StreamError(str(exc)) from exc
 
+def _extract(page_url: str) -> str:
+    """yt-dlp extraction of a single page into a direct media URL."""
     opts = base_opts(format="bestaudio/best", noplaylist=True, socket_timeout=15)
     try:
         with YoutubeDL(opts) as ydl:
             info = ydl.extract_info(page_url, download=False)
     except Exception as exc:  # extractor errors are all "cannot play this"
         raise StreamError(f"could not resolve audio: {exc}") from exc
-
     if info.get("is_live"):
-        # Same rule as the downloader: an endless source is not a track.
         raise StreamError("live streams cannot be played as a track")
-
     url = info.get("url")
     if not url:
-        # A merged format has no single URL; pick the best audio-only one.
         formats = [f for f in (info.get("formats") or []) if f.get("acodec") not in (None, "none")]
         if formats:
             url = formats[-1].get("url")
     if not url:
         raise StreamError("no audio stream in that upload")
-
-    _remember(key, url)
     return url
+
+
+def _resolve_full_length(track: Track) -> str:
+    """Find a full-length upload the way a download would, and extract it.
+
+    Prefers SoundCloud over YouTube: both give full-length audio, but YouTube
+    bot-blocks datacenter IPs ("Sign in to confirm you're not a bot") while
+    SoundCloud normally does not. A Deezer/Apple track with no own page is
+    therefore searched on SoundCloud first, then YouTube, then — by the caller
+    — the 30s preview CDN if both are blocked.
+    """
+    from .downloader import DownloadError, search_source
+
+    page_url = track.source_url
+    if page_url:
+        return _extract(page_url)
+    last_err = "no source found"
+    for prefix in ("scsearch8", "ytsearch8"):
+        try:
+            page_url = search_source(track, prefix=prefix)
+        except DownloadError as exc:
+            last_err = str(exc)
+            continue
+        try:
+            return _extract(page_url)
+        except StreamError as exc:
+            last_err = str(exc)
+            continue
+    raise StreamError(last_err)
 
 
 def open_upstream(url: str, range_header: str | None) -> tuple[int, dict[str, str], object]:

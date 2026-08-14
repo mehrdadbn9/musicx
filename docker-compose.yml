@@ -98,6 +98,10 @@ services:
       - YTDLP_REMOTE_COMPONENTS=${YTDLP_REMOTE_COMPONENTS-ejs:github}
       - YTDLP_CACHE_DIR=/app/cache
       - POT_PROVIDER_URL=${POT_PROVIDER_URL:-http://pot-provider:4416}
+      # Optional: free OpenRouter model for the AI Vibe DJ. When set, the DJ
+      # uses a real LLM (no paid key); when empty it falls back to an offline
+      # keyword classifier. Get a free key at openrouter.ai — no payment.
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
       # Rarely needed at home. Setting it without mounting a file does
       # nothing; see .env.example.
       - YTDLP_COOKIEFILE=${YTDLP_COOKIEFILE:-}

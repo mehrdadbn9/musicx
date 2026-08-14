@@ -157,6 +157,27 @@ export async function searchCatalog(query: string, page = 0): Promise<SearchPage
   return { ...data, results: data.results.map(localizeResult) }
 }
 
+/** AI Vibe DJ: a free LLM (server-side) turns a vibe into a mood profile and
+ *  runs a real catalog search. No paid key — uses OpenRouter's free tier,
+ *  falling back to an offline classifier if the model is unreachable. */
+export interface DJProfile {
+  energy: string
+  genres: string[]
+  query: string
+  bpm: string
+  eq: string
+  model?: string
+}
+export interface DJResponse {
+  profile: DJProfile
+  results: SearchResult[]
+  has_more: boolean
+}
+export async function apiDJ(vibe: string): Promise<DJResponse> {
+  const { data } = await client.get<DJResponse>('/dj', { params: { q: vibe } })
+  return { ...data, results: data.results.map(localizeResult) }
+}
+
 /** Append a page, dropping anything already on screen. */
 export function mergeResults(current: SearchResult[], incoming: SearchResult[]): SearchResult[] {
   const seen = new Set(current.map((r) => r.dedup_key))
