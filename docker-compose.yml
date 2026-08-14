@@ -1,4 +1,7 @@
-# MusicX, self-hosted:  docker compose up -d  →  http://localhost:8080
+# MusicX, self-hosted:  docker compose up -d  →  http://localhost:8090
+#
+# Port is 8090 to stay clear of the gym app (Dumbbell Gym Assistant) which
+# serves on 8000. Change via MUSICX_PORT if you ever need to.
 #
 # Works on a fresh clone with no .env. The defaults here are not the ones in
 # the code — the code protects a server shared with strangers, this file
@@ -13,7 +16,7 @@ services:
     restart: unless-stopped
     ports:
       # The only port anything needs: nginx serves the app and proxies /api.
-      - "${MUSICX_PORT:-8080}:80"
+      - "${MUSICX_PORT:-8090}:80"
     depends_on:
       - api
     # nginx serving a static bundle measures at ~6 MB; 128 MB is pure ceiling

@@ -250,6 +250,17 @@ export function SearchResults({
   // underlying results change so a fresh search starts un-reordered.
   const [trackOrder, setTrackOrder] = useState<string[] | null>(null)
   useEffect(() => setTrackOrder(null), [results])
+
+  const grouped = useMemo(() => {
+    const map = new Map<ResultKind, SearchResult[]>()
+    for (const r of results) {
+      const list = map.get(r.kind) ?? []
+      list.push(r)
+      map.set(r.kind, list)
+    }
+    return map
+  }, [results])
+
   // Reorderable filter tabs (All / Tracks / Artists / ...). The order comes
   // from the parent (persisted preference); this hook drives the drag.
   const orderedKinds = (tabOrder ?? ['all', 'track', 'artist', 'album', 'playlist']).filter(
@@ -262,16 +273,6 @@ export function SearchResults({
     next.splice(to, 0, moved)
     onReorderTabs(next)
   })
-
-  const grouped = useMemo(() => {
-    const map = new Map<ResultKind, SearchResult[]>()
-    for (const r of results) {
-      const list = map.get(r.kind) ?? []
-      list.push(r)
-      map.set(r.kind, list)
-    }
-    return map
-  }, [results])
 
   if (results.length === 0) {
     return (

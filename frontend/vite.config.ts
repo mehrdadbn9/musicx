@@ -27,6 +27,17 @@ function pwaServiceWorker(): PluginOption {
       const version = createHash('sha256').update(html).digest('hex').slice(0, 16)
       const sw = readFileSync(SW_TEMPLATE, 'utf8').replaceAll('__MUSICX_BUILD__', version)
       writeFileSync(resolve(outDir, 'sw.js'), sw)
+
+      // The entry `<script type="module" crossorigin …>` tells the browser
+      // to fetch the bundle as a CORS request. Behind a reverse proxy/tunnel
+      // (Cloudflare quick tunnel, Caddy) that returns no
+      // Access-Control-Allow-Origin header, the browser silently blocks the
+      // module and the app renders as a blank/black screen. The app is
+      // same-origin, so crossorigin is unnecessary — strip it.
+      const index = resolve(outDir, 'index.html')
+      const src = readFileSync(index, 'utf8')
+      const fixed = src.replace(/\s+crossorigin/g, '')
+      if (fixed !== src) writeFileSync(index, fixed)
     },
   }
 }
