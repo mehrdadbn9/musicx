@@ -264,7 +264,7 @@ export function PlayerBar() {
             where the pointer maths read it from — every click landed at the
             mirrored time. Both are anchored on the left now. */}
         <div
-          className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#a855f7] via-[#c026d3] to-[#ec4899] transition-[width] duration-100 ease-linear"
+          className="absolute inset-y-0 left-0 bg-gradient-to-r from-[#6366f1] via-[#4f46e5] to-[#22d3ee] transition-[width] duration-100 ease-linear"
           style={{ width: `${fraction * 100}%` }}
         />
         {seekable && (
@@ -439,7 +439,7 @@ export function PlayerBar() {
         >
           <ListMusic className="size-4" />
           {queue.length > 0 && (
-            <span className="absolute -top-0.5 -end-0.5 grid min-w-4 place-items-center rounded-full bg-fuchsia-500 px-1 text-[10px] font-semibold leading-4 text-white">
+            <span className="absolute -top-0.5 -end-0.5 grid min-w-4 place-items-center rounded-full bg-indigo-500 px-1 text-[10px] font-semibold leading-4 text-white">
               {queue.length}
             </span>
           )}
@@ -520,7 +520,7 @@ export function PlayerBar() {
                     <span className="block truncate text-micro text-ink-500">{q.artist}</span>
                   </span>
                   {q.suggested && (
-                    <Sparkles className="size-3.5 shrink-0 text-fuchsia-400" aria-label="Suggested" />
+                    <Sparkles className="size-3.5 shrink-0 text-indigo-400" aria-label="Suggested" />
                   )}
                 </button>
               </li>
@@ -538,7 +538,7 @@ export function PlayerBar() {
                 }
               }}
               disabled={addingSimilar}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-ink-700 px-3 py-2 text-mini text-ink-200 transition duration-200 hover:border-fuchsia-500/50 hover:text-ink-100 disabled:opacity-60"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-ink-700 px-3 py-2 text-mini text-ink-200 transition duration-200 hover:border-indigo-500/50 hover:text-ink-100 disabled:opacity-60"
             >
               {addingSimilar ? (
                 <LoaderCircle className="size-3.5 animate-spin" />

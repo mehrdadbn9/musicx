@@ -107,24 +107,21 @@
   --font-display: 'Inter', 'Vazirmatn', 'Vazirmatn Fallback', system-ui, sans-serif;
   --font-sans: 'Inter', 'Vazirmatn', 'Vazirmatn Fallback', system-ui, sans-serif;
 
-  /* Purple-tinted dark neutrals (hue ~270). */
-  --color-ink-950: #0b0a10;
-  --color-ink-900: #131019;
-  --color-ink-800: #1d1826;
-  --color-ink-700: #2a2338;
-  --color-ink-600: #443c5a;
-  --color-ink-400: #837b95;
-  --color-ink-300: #a9a2bb;
-  --color-ink-100: #ebe9f2;
+  /* Gemini / AI-Studio music app palette: slate neutrals + indigo/cyan. */
+  --color-ink-950: #090a0f;
+  --color-ink-900: #0d0f17;
+  --color-ink-800: #11131b;
+  --color-ink-700: #181b26;
+  --color-ink-600: #2a2f3d;
+  --color-ink-400: #8a90a3;
+  --color-ink-300: #c7ccdb;
+  --color-ink-100: #f1f5f9;
 
-  /* Purple accent — the only chromatic colour in the UI. It marks the one
-       primary action per surface and the "this is playing / this is done"
-       state. It is never used for borders, body text or decoration. The
-       Tailwind class names still read `lime-*` for historical reasons; the
-       values here are what the UI actually shows. */
-  --color-lime-flash: #a855f7;
-  --color-lime-soft: #c084fc;
+  /* Indigo primary + cyan accent — the Gemini music app's chromatic colours. */
+  --color-lime-flash: #6366f1;
+  --color-lime-soft: #818cf8;
   --color-lime-ink: #ffffff;
+  --color-dj-cyan: #22d3ee;
 
   --color-danger: #f0705f;
 
@@ -338,8 +335,8 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(60rem 40rem at 50% -14rem, color-mix(in oklab, #a855f7 22%, transparent), transparent 70%),
-    radial-gradient(48rem 32rem at 85% -8rem, color-mix(in oklab, #ec4899 16%, transparent), transparent 65%),
+    radial-gradient(60rem 40rem at 50% -14rem, color-mix(in oklab, #6366f1 22%, transparent), transparent 70%),
+    radial-gradient(48rem 32rem at 85% -8rem, color-mix(in oklab, #22d3ee 16%, transparent), transparent 65%),
     radial-gradient(40rem 30rem at 12% 4rem, color-mix(in oklab, #7c3aed 14%, transparent), transparent 60%);
 }
 
@@ -374,11 +371,11 @@ body::before {
    the wordmark's "X", the primary play/download action, and the now-playing
    accents. Not a decoration to sprinkle. */
 .accent-gradient {
-  background-image: linear-gradient(115deg, #a855f7 0%, #c026d3 55%, #ec4899 100%);
+  background-image: linear-gradient(115deg, #6366f1 0%, #4f46e5 55%, #22d3ee 100%);
 }
 
 .text-gradient {
-  background-image: linear-gradient(115deg, #c084fc 0%, #e879f9 50%, #f472b6 100%);
+  background-image: linear-gradient(115deg, #818cf8 0%, #6366f1 50%, #22d3ee 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -387,25 +384,110 @@ body::before {
 /* AI Vibe DJ — Gemini-style glass hero + mix card */
 .dj-hero {
   background:
-    radial-gradient(120% 140% at 0% 0%, color-mix(in oklab, #a855f7 22%, transparent), transparent 60%),
-    radial-gradient(120% 140% at 100% 0%, color-mix(in oklab, #f472b6 18%, transparent), transparent 55%),
+    radial-gradient(120% 140% at 0% 0%, color-mix(in oklab, #6366f1 22%, transparent), transparent 60%),
+    radial-gradient(120% 140% at 100% 0%, color-mix(in oklab, #22d3ee 18%, transparent), transparent 55%),
     color-mix(in oklab, var(--color-ink-900) 70%, transparent);
-  border: 1px solid color-mix(in oklab, #a855f7 26%, var(--color-ink-700));
+  border: 1px solid color-mix(in oklab, #6366f1 26%, var(--color-ink-700));
   backdrop-filter: blur(8px);
-  box-shadow: 0 10px 40px -14px color-mix(in oklab, #a855f7 50%, transparent);
+  box-shadow: 0 10px 40px -14px color-mix(in oklab, #6366f1 50%, transparent);
 }
 .dj-mix-card {
   background: color-mix(in oklab, var(--color-ink-900) 72%, transparent);
-  border: 1px solid color-mix(in oklab, #a855f7 24%, var(--color-ink-700));
+  border: 1px solid color-mix(in oklab, #6366f1 24%, var(--color-ink-700));
   backdrop-filter: blur(8px);
+}
+
+/* AI Vibe DJ — Gemini / AI Studio "Smart DJ Studio" look */
+:root {
+  --dj-indigo: #6366f1;
+  --dj-cyan: #22d3ee;
+}
+.dj-banner {
+  background: linear-gradient(90deg, #312e81 0%, #4c1d95 50%, #0d0f17 100%);
+  color: #fff;
+}
+.dj-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(129, 140, 248, 0.4);
+  background: rgba(99, 102, 241, 0.3);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #c7d2fe;
+}
+.dj-disc {
+  width: 7rem;
+  height: 7rem;
+  border-radius: 1.5rem;
+  border: 1px solid rgba(129, 140, 248, 0.3);
+  background: rgba(99, 102, 241, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.6);
+}
+.dj-prompt {
+  background: rgba(255, 255, 255, 0.03);
+}
+.dj-input {
+  color: #fff;
+}
+.dj-input::placeholder {
+  color: #64748b;
+}
+.dj-btn {
+  background: #4f46e5;
+}
+.dj-btn:hover {
+  background: #6366f1;
+}
+.dj-btn-ghost {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+}
+.dj-btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.dj-chip {
+  background: rgba(255, 255, 255, 0.05);
+}
+.dj-chip:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+.dj-ai-mastered {
+  border-radius: 0.375rem;
+  background: #4f46e5;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #fff;
+}
+.dj-mix-card {
+  background: linear-gradient(135deg, rgba(49, 46, 129, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
 }
 
 /* A soft violet halo for the one primary action per surface, so it reads as
    lit rather than merely coloured. */
 .accent-glow {
   box-shadow:
-    0 0 0 1px color-mix(in oklab, #a855f7 40%, transparent),
-    0 8px 30px -8px color-mix(in oklab, #a855f7 60%, transparent);
+    0 0 0 1px color-mix(in oklab, #6366f1 40%, transparent),
+    0 8px 30px -8px color-mix(in oklab, #6366f1 60%, transparent);
 }
 
 /* Glass surface — the redesign's default panel. Translucent, blurred, lit by
@@ -421,7 +503,7 @@ body::before {
     ),
     color-mix(in oklab, var(--color-ink-900) 78%, transparent);
   backdrop-filter: blur(14px) saturate(1.1);
-  border: 1px solid color-mix(in oklab, #a855f7 18%, var(--color-ink-700));
+  border: 1px solid color-mix(in oklab, #6366f1 18%, var(--color-ink-700));
 }
 
 .glass-hover {
@@ -431,15 +513,15 @@ body::before {
     transform 0.2s;
 }
 .glass-hover:hover {
-  border-color: color-mix(in oklab, #a855f7 45%, transparent);
-  background-color: color-mix(in oklab, #a855f7 8%, transparent);
+  border-color: color-mix(in oklab, #6366f1 45%, transparent);
+  background-color: color-mix(in oklab, #6366f1 8%, transparent);
 }
 
 /* The primary action. A lit gradient pill — one per surface, never more. */
 .btn-accent {
-  background-image: linear-gradient(115deg, #a855f7 0%, #c026d3 55%, #ec4899 100%);
+  background-image: linear-gradient(115deg, #6366f1 0%, #4f46e5 55%, #22d3ee 100%);
   color: #fff;
-  box-shadow: 0 10px 30px -10px color-mix(in oklab, #c026d3 75%, transparent);
+  box-shadow: 0 10px 30px -10px color-mix(in oklab, #4f46e5 75%, transparent);
   transition:
     filter 0.2s,
     transform 0.15s;
@@ -540,12 +622,12 @@ body::before {
   background-image:
     radial-gradient(
       60rem 60rem at 110% -10%,
-      color-mix(in oklab, #a855f7 13%, transparent),
+      color-mix(in oklab, #6366f1 13%, transparent),
       transparent 62%
     ),
     radial-gradient(
       55rem 55rem at -15% 115%,
-      color-mix(in oklab, #ec4899 10%, transparent),
+      color-mix(in oklab, #22d3ee 10%, transparent),
       transparent 62%
     );
   background-attachment: fixed;
@@ -553,13 +635,13 @@ body::before {
 
 /* Selection and scrollbar — the small surfaces everyone touches. */
 ::selection {
-  background: color-mix(in oklab, #a855f7 45%, transparent);
+  background: color-mix(in oklab, #6366f1 45%, transparent);
   color: #fff;
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklab, #a855f7 35%, var(--color-ink-700)) transparent;
+  scrollbar-color: color-mix(in oklab, #6366f1 35%, var(--color-ink-700)) transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
@@ -567,10 +649,10 @@ body::before {
 }
 *::-webkit-scrollbar-thumb {
   border-radius: 999px;
-  background: color-mix(in oklab, #a855f7 35%, var(--color-ink-700));
+  background: color-mix(in oklab, #6366f1 35%, var(--color-ink-700));
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in oklab, #a855f7 55%, var(--color-ink-700));
+  background: color-mix(in oklab, #6366f1 55%, var(--color-ink-700));
 }
 *::-webkit-scrollbar-track {
   background: transparent;
@@ -590,7 +672,7 @@ body::before {
     ),
     color-mix(in oklab, var(--color-ink-950) 82%, transparent);
   backdrop-filter: blur(18px) saturate(1.1);
-  border-right: 1px solid color-mix(in oklab, #a855f7 14%, var(--color-ink-800));
+  border-right: 1px solid color-mix(in oklab, #6366f1 14%, var(--color-ink-800));
 }
 
 /* Sidebar navigation item — a quiet glass row that lights up with the
@@ -619,8 +701,8 @@ body::before {
 }
 .nav-item-active {
   color: #fff;
-  background-image: linear-gradient(115deg, #a855f7 0%, #c026d3 55%, #ec4899 100%);
-  box-shadow: 0 8px 24px -8px color-mix(in oklab, #c026d3 70%, transparent);
+  background-image: linear-gradient(115deg, #6366f1 0%, #4f46e5 55%, #22d3ee 100%);
+  box-shadow: 0 8px 24px -8px color-mix(in oklab, #6366f1 70%, transparent);
 }
 .nav-item-active:hover {
   color: #fff;
@@ -635,8 +717,8 @@ body::before {
   gap: 0.5rem;
   padding: 0.3rem 0.9rem 0.3rem 0.4rem;
   border-radius: 999px;
-  border: 1px solid color-mix(in oklab, #a855f7 28%, var(--color-ink-700));
-  background: color-mix(in oklab, #a855f7 8%, transparent);
+  border: 1px solid color-mix(in oklab, #6366f1 28%, var(--color-ink-700));
+  background: color-mix(in oklab, #6366f1 8%, transparent);
   color: var(--color-ink-200);
   font-size: var(--text-mini);
   font-weight: 500;
@@ -648,9 +730,9 @@ body::before {
   width: 1.4rem;
   height: 1.4rem;
   border-radius: 0.45rem;
-  background: linear-gradient(115deg, #a855f7, #c026d3, #ec4899);
+  background: linear-gradient(115deg, #6366f1, #818cf8, #22d3ee);
   box-shadow:
-    0 0 0 1px color-mix(in oklab, #a855f7 45%, transparent),
+    0 0 0 1px color-mix(in oklab, #6366f1 45%, transparent),
     0 2px 10px -2px rgba(192, 38, 211, 0.55);
 }
 .badge-mark svg {
@@ -665,7 +747,7 @@ body::before {
   gap: 0.375rem;
   padding: 0.25rem 0.625rem;
   border-radius: 999px;
-  border: 1px solid color-mix(in oklab, #a855f7 22%, var(--color-ink-700));
+  border: 1px solid color-mix(in oklab, #6366f1 22%, var(--color-ink-700));
   background: color-mix(in oklab, var(--color-ink-900) 60%, transparent);
   color: var(--color-ink-300);
   font-size: var(--text-micro);
@@ -697,7 +779,7 @@ body::before {
   opacity: 0.92;
 }
 .source-badge:hover {
-  border-color: color-mix(in oklab, #a855f7 45%, var(--color-ink-600));
+  border-color: color-mix(in oklab, #6366f1 45%, var(--color-ink-600));
   background: color-mix(in oklab, var(--color-ink-900) 72%, transparent);
   color: var(--color-ink-100);
   transform: translateY(-1px);
@@ -710,18 +792,18 @@ body::before {
 .search-bar-ring {
   background: linear-gradient(
     115deg,
-    color-mix(in oklab, #a855f7 42%, transparent),
-    color-mix(in oklab, #c026d3 42%, transparent),
-    color-mix(in oklab, #ec4899 42%, transparent)
+    color-mix(in oklab, #6366f1 42%, transparent),
+    color-mix(in oklab, #4f46e5 42%, transparent),
+    color-mix(in oklab, #22d3ee 42%, transparent)
   );
-  box-shadow: 0 10px 40px -18px color-mix(in oklab, #c026d3 50%, transparent);
+  box-shadow: 0 10px 40px -18px color-mix(in oklab, #4f46e5 50%, transparent);
   transition: box-shadow 0.25s;
 }
 .search-bar-ring:focus-within {
-  background: linear-gradient(115deg, #a855f7 0%, #c026d3 55%, #ec4899 100%);
+  background: linear-gradient(115deg, #6366f1 0%, #4f46e5 55%, #22d3ee 100%);
   box-shadow:
-    0 0 0 4px color-mix(in oklab, #a855f7 16%, transparent),
-    0 22px 60px -18px color-mix(in oklab, #c026d3 60%, transparent);
+    0 0 0 4px color-mix(in oklab, #6366f1 16%, transparent),
+    0 22px 60px -18px color-mix(in oklab, #4f46e5 60%, transparent);
 }
 .search-bar-inner {
   background:

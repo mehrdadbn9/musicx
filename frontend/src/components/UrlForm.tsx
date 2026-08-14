@@ -65,7 +65,7 @@ export function UrlForm({ loading, onSubmit, className, inputRef, focusPulse = 0
         <div className="search-bar-inner relative flex items-center gap-2.5 rounded-[calc(1.8rem-1px)] py-2 pe-2 ps-2 sm:gap-3 sm:ps-2.5">
           <span
             aria-hidden
-            className="flex size-11 shrink-0 items-center justify-center rounded-[1.1rem] accent-gradient shadow-lg shadow-fuchsia-950/40 transition-transform duration-300 group-focus-within:scale-105"
+            className="flex size-11 shrink-0 items-center justify-center rounded-[1.1rem] accent-gradient shadow-lg shadow-indigo-950/40 transition-transform duration-300 group-focus-within:scale-105"
           >
             <Search className="size-5 text-white" />
           </span>

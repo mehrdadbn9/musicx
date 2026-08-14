@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ArrowLeft, ArrowRight, Library, Link2 as LinkIcon, Search, Heart, Wand2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Library, Link2 as LinkIcon, Search, Heart, Wand2, Disc } from 'lucide-react'
 import clsx from 'clsx'
 import {
   apiError,
@@ -96,7 +96,7 @@ function FeatureCard({
     <div className="rounded-panel border border-ink-700 bg-ink-900/70 p-4 backdrop-blur-md transition duration-200 hover:-translate-y-0.5 hover:border-ink-500 hover:bg-ink-900/90">
       <div className="flex items-center gap-3">
         <span
-          className="grid size-11 shrink-0 place-items-center rounded-btn bg-gradient-to-br from-[#a855f7] via-[#c026d3] to-[#ec4899] text-xl leading-none shadow-lg shadow-fuchsia-950/40"
+          className="grid size-11 shrink-0 place-items-center rounded-btn bg-gradient-to-br from-[#6366f1] via-[#4f46e5] to-[#22d3ee] text-xl leading-none shadow-lg shadow-indigo-950/40"
           aria-hidden
         >
           {emoji}
@@ -455,6 +455,7 @@ function Shell() {
     setStack([])
     setSharedArrival(null)
     setLibraryOpen(false)
+    setAiDjOpen(false)
     resetErrors()
   }
 
@@ -472,6 +473,7 @@ function Shell() {
         landing={landing}
         libraryOpen={libraryOpen}
         aiDjOpen={aiDjOpen}
+        libraryTab={libraryTab}
         count={libraryStatus?.tracks ?? 0}
         onHome={goHome}
         onLibrary={() => { setLibraryTab('tracks'); setLibraryOpen((v) => !v); }}
@@ -782,6 +784,7 @@ function Sidebar({
   landing,
   libraryOpen,
   aiDjOpen,
+  libraryTab,
   count,
   onHome,
   onLibrary,
@@ -791,6 +794,7 @@ function Sidebar({
   landing: boolean
   libraryOpen: boolean
   aiDjOpen: boolean
+  libraryTab: 'tracks' | 'playlists' | 'liked'
   count: number
   onHome: () => void
   onLibrary: () => void
@@ -799,18 +803,26 @@ function Sidebar({
 }) {
   return (
     <aside className="sidebar-surface sticky top-0 hidden h-screen w-64 shrink-0 flex-col px-4 py-6 lg:flex">
+      {/* Brand — Gemini-style Disc mark + wordmark + PRO badge */}
       <button
         onClick={onHome}
         disabled={landing}
         aria-label="MusicX home"
         className="group flex items-center gap-2.5 rounded-ctl px-2 py-1.5 transition disabled:cursor-default"
       >
+        <span className="grid size-9 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 via-indigo-600 to-cyan-400 shadow-lg shadow-indigo-950/40">
+          <Disc className="size-5 text-white animate-spin-slow" aria-hidden />
+        </span>
         <span className="font-display text-lg font-bold tracking-tight text-ink-100">
           Music<span className="text-gradient">X</span>
         </span>
+        <span className="dj-badge ms-1 !py-0.5 !text-[0.6rem]">PRO</span>
       </button>
 
-      <nav aria-label="Main" className="mt-8 flex flex-col gap-1">
+      <p className="px-3 pt-7 pb-1 text-micro font-semibold tracking-[0.18em] text-ink-400 uppercase">
+        Menu
+      </p>
+      <nav aria-label="Main" className="flex flex-col gap-1">
         <button
           onClick={onHome}
           aria-current={landing ? 'page' : undefined}
@@ -820,9 +832,23 @@ function Sidebar({
           Home
         </button>
         <button
+          onClick={onAiDj}
+          aria-pressed={aiDjOpen}
+          className={clsx('nav-item', aiDjOpen && 'nav-item-active')}
+        >
+          <Wand2 className="size-4" aria-hidden />
+          AI DJ
+        </button>
+      </nav>
+
+      <p className="px-3 pt-6 pb-1 text-micro font-semibold tracking-[0.18em] text-ink-400 uppercase">
+        Your Library
+      </p>
+      <nav aria-label="Library" className="flex flex-col gap-1">
+        <button
           onClick={onLibrary}
           aria-pressed={libraryOpen}
-          className={clsx('nav-item', libraryOpen && 'nav-item-active')}
+          className={clsx('nav-item', libraryOpen && libraryTab === 'tracks' && 'nav-item-active')}
         >
           <Library className="size-4" aria-hidden />
           Library
@@ -834,18 +860,10 @@ function Sidebar({
         </button>
         <button
           onClick={onLiked}
-          className={clsx('nav-item', libraryOpen && 'nav-item-active')}
+          className={clsx('nav-item', libraryOpen && libraryTab === 'liked' && 'nav-item-active')}
         >
           <Heart className="size-4" aria-hidden />
           Liked
-        </button>
-        <button
-          onClick={onAiDj}
-          aria-pressed={aiDjOpen}
-          className={clsx('nav-item', aiDjOpen && 'nav-item-active')}
-        >
-          <Wand2 className="size-4" aria-hidden />
-          AI DJ
         </button>
       </nav>
 

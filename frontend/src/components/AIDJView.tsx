@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { AudioLines, Play, Sparkles, Wand2 } from 'lucide-react'
+import { Disc, Play, Sparkles, Wand2 } from 'lucide-react'
 import { apiDJ, type DJProfile, type SearchResult } from '../lib/api'
 import { playQueue, type PlayableItem } from '../lib/player'
 
@@ -37,11 +37,11 @@ function resultToItem(r: SearchResult): PlayableItem {
 }
 
 const SAMPLES = [
-  'Heavy gym phonk 150 bpm',
-  'Lo-fi beats to study',
-  'Late night coding drive',
-  'Sunset afro house party',
-  'Calm piano to sleep',
+  'Late night high-speed coding session in Neo-Tokyo (130+ BPM)',
+  'Heavy deadlift PR workout with drift phonk and explosive 808s',
+  'Rainy afternoon coffee shop lo-fi study with mellow Rhodes chords',
+  'Sunset ocean drive with melodic deep house and vocal warmth',
+  'Weightless space meditation and deep delta wave ambient sleep',
 ]
 
 export function AIDJView() {
@@ -51,7 +51,6 @@ export function AIDJView() {
   const [tracks, setTracks] = useState<SearchResult[]>([])
   const [error, setError] = useState<string | null>(null)
   const [model, setModel] = useState<string | null>(null)
-
   const [enhancing, setEnhancing] = useState(false)
 
   const generate = async (text?: string, enhance = false) => {
@@ -87,104 +86,127 @@ export function AIDJView() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl pt-6">
-      {/* Gemini-style AI hero */}
-      <div className="dj-hero rounded-2xl p-6">
-        <div className="flex items-center gap-2 text-gradient text-lg font-bold">
-          <Wand2 className="size-5" /> AI Vibe DJ
+    <div className="flex flex-col gap-8 pb-32 pt-2">
+      {/* Header Banner — Gemini / AI Studio "Smart DJ Studio" look */}
+      <div className="dj-banner relative overflow-hidden rounded-3xl border border-white/10 p-6 sm:p-8 shadow-2xl">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex max-w-xl flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="dj-badge">
+                <Sparkles className="size-3.5 text-dj-cyan" /> MusicX Smart DJ Studio
+              </span>
+              <span className="font-mono text-xs text-indigo-200">Real-Time Vibe Synthesizer</span>
+            </div>
+            <h1 className="font-black text-white">
+              AI-Curated DJ Mixes &amp; BPM Transition Engine
+            </h1>
+            <p className="text-sm text-indigo-100/90">
+              Describe your current vibe, activity, or environment. Our AI DJ reads the mood and
+              builds a real mix from the catalog — instantly, or enhanced by a free LLM.
+            </p>
+          </div>
+          <div className="dj-disc shrink-0">
+            <Disc className="size-14 animate-spin-slow text-dj-cyan" />
+          </div>
         </div>
-        <p className="mt-1 text-sm text-ink-300">
-          Describe a mood or moment. A free AI model reads the vibe and builds a real mix from the catalog — instantly, or enhanced by a free LLM.
-        </p>
-        <div className="mt-4 flex items-end gap-2">
-          <textarea
+      </div>
+
+      {/* Prompt Input Box */}
+      <div className="dj-prompt rounded-3xl border border-white/10 p-5 shadow-xl sm:p-6">
+        <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-300">
+          <Wand2 className="size-4 text-dj-indigo" /> Generate Custom Set From Vibe Prompt
+        </label>
+        <div className="mt-3 flex flex-col gap-3 sm:flex-row">
+          <input
+            type="text"
             value={vibe}
             onChange={(e) => setVibe(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); generate() } }}
-            rows={2}
-            placeholder="e.g. heavy gym phonk 150 bpm"
-            className="dj-input flex-1 resize-none rounded-xl bg-ink-900/70 p-3 text-sm text-ink-100 outline-none ring-1 ring-ink-700 focus:ring-accent"
+            onKeyDown={(e) => { if (e.key === 'Enter') generate() }}
+            placeholder="e.g. Neon cyberpunk midnight drive or Lo-fi rain with warm piano..."
+            className="dj-input flex-1 rounded-2xl border border-white/15 bg-white/[0.06] px-4 py-3.5 text-sm font-medium text-white placeholder-slate-500 outline-none focus:border-dj-indigo"
           />
           <button
             onClick={() => generate()}
             disabled={loading || enhancing || !vibe.trim()}
-            className="dj-go flex items-center gap-1.5 rounded-xl bg-accent px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
+            className="dj-btn flex shrink-0 items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-indigo-600/30 transition-all disabled:opacity-50"
           >
-            <Sparkles className="size-4" /> {loading ? 'Mixing…' : 'Generate mix'}
+            {loading ? (
+              <><Sparkles className="size-4 animate-spin" /> Mixing Set…</>
+            ) : (
+              <><Sparkles className="size-4 text-dj-cyan" /> Synthesize Mix</>
+            )}
           </button>
           <button
             onClick={enhance}
             disabled={loading || enhancing || !vibe.trim()}
-            title="Wait for the free LLM to craft a smarter mix (takes ~15-20s)"
-            className="dj-go flex items-center gap-1.5 rounded-xl bg-ink-800 px-4 py-3 text-sm font-bold text-ink-100 ring-1 ring-ink-700 hover:ring-accent disabled:opacity-50"
+            title="Wait for the free LLM to craft a smarter mix (~15-20s)"
+            className="dj-btn-ghost flex shrink-0 items-center justify-center gap-2 rounded-2xl px-5 py-3.5 text-sm font-bold text-white transition-all disabled:opacity-50"
           >
             <Wand2 className="size-4" /> {enhancing ? 'Thinking…' : '✨ Enhance with AI'}
           </button>
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {SAMPLES.map((s) => (
-            <button
-              key={s}
-              onClick={() => generate(s)}
-              className="rounded-full bg-ink-800/80 px-3 py-1 text-xs text-ink-200 ring-1 ring-ink-700 hover:ring-accent"
-            >
-              {s}
-            </button>
-          ))}
+        <div className="mt-4 flex flex-col gap-1.5">
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            Quick Inspo Prompts:
+          </span>
+          <div className="flex flex-wrap gap-2">
+            {SAMPLES.map((p) => (
+              <button
+                key={p}
+                onClick={() => generate(p)}
+                className="dj-chip rounded-xl border border-white/10 px-3 py-1.5 text-left text-xs text-slate-300 transition-all hover:border-dj-indigo hover:text-white"
+              >
+                {p}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {error && (
-        <div className="mt-4 rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-300">{error}</div>
-      )}
-
-      {loading && (
-        <div className="mt-6 flex items-center justify-center gap-2 text-ink-300">
-          <AudioLines className="size-5 animate-pulse" /> Reading the vibe…
-        </div>
-      )}
-      {enhancing && (
-        <div className="mt-6 flex items-center justify-center gap-2 text-ink-300">
-          <Wand2 className="size-5 animate-pulse" /> Thinking with the free AI model… (~15-20s)
-        </div>
+        <div className="rounded-xl border border-red-500/40 bg-red-500/10 p-3 text-sm text-red-300">{error}</div>
       )}
 
       {profile && !loading && (
-        <div className="mt-6">
-          {/* Mix card — Gemini glass style */}
-          <div className="dj-mix-card rounded-2xl p-5">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl font-bold capitalize">{profile.energy} energy mix</h2>
-              {model && (
-                <span className="rounded-full bg-lime-flash/15 px-2 py-0.5 text-[11px] font-semibold text-lime-flash">
-                  {model.includes('offline') ? 'offline' : 'free LLM'}
+        <div className="dj-mix-card flex flex-col gap-4 rounded-3xl border border-dj-indigo/30 p-6 shadow-2xl">
+          <div className="flex flex-col gap-4 border-b border-white/10 pb-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="dj-ai-mastered">AI Mastered</span>
+                <span className="font-mono text-xs font-bold text-dj-cyan">
+                  {profile.bpm || '—'} BPM Target
                 </span>
-              )}
+                {model && (
+                  <span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-300">
+                    {model.includes('offline') ? 'offline' : 'free LLM'}
+                  </span>
+                )}
+              </div>
+              <h2 className="font-black text-white">
+                AI Mix: {profile.energy} energy · {(profile.genres ?? []).join(', ')}
+              </h2>
+              <p className="text-xs text-slate-400">
+                Generated for “{vibe}”. Curated tempo sequencing from the live catalog.
+              </p>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
-              <Stat label="Energy" value={profile.energy} />
-              <Stat label="Genres" value={(profile.genres ?? []).join(', ')} />
-              <Stat label="Tempo" value={profile.bpm} />
-              <Stat label="Query" value={profile.query} />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={playMix}
+                disabled={!tracks.length}
+                className="dj-btn flex items-center gap-2 rounded-2xl px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-indigo-600/40 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+              >
+                <Play className="size-4 fill-white" /> Play Mix Now
+              </button>
             </div>
-            {profile.eq && <p className="mt-3 text-xs text-ink-300">EQ · {profile.eq}</p>}
-            <button
-              onClick={playMix}
-              disabled={!tracks.length}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-accent py-3 text-sm font-bold text-white disabled:opacity-50"
-            >
-              <Play className="size-4" /> Play mix ({tracks.length})
-            </button>
           </div>
 
-          {/* Track list */}
-          <ul className="mt-4 space-y-2">
+          <ul className="flex flex-col gap-1">
             {tracks.map((t, i) => (
               <li
                 key={t.dedup_key}
-                className="flex items-center gap-3 rounded-xl bg-ink-800/60 p-3 ring-1 ring-ink-700"
+                className="flex items-center gap-3 rounded-xl bg-white/[0.03] p-3 ring-1 ring-white/5"
               >
-                <span className="w-5 text-center text-xs tabular-nums text-ink-400">{i + 1}</span>
+                <span className="w-5 text-center text-xs tabular-nums text-slate-400">{i + 1}</span>
                 {t.cover_url ? (
                   <img src={t.cover_url} alt="" className="size-10 rounded-md object-cover" />
                 ) : (
@@ -196,7 +218,7 @@ export function AIDJView() {
                 </div>
                 <button
                   onClick={() => playQueue([resultToItem(t)], 0)}
-                  className="rounded-lg bg-ink-700 p-2 text-ink-100 hover:bg-accent"
+                  className="rounded-lg bg-white/10 p-2 text-ink-100 transition-all hover:bg-dj-indigo"
                   aria-label="Play"
                 >
                   <Play className="size-4" />
@@ -206,15 +228,6 @@ export function AIDJView() {
           </ul>
         </div>
       )}
-    </div>
-  )
-}
-
-function Stat({ label, value }: { label: string; value?: string }) {
-  return (
-    <div className="rounded-lg bg-ink-900/60 p-2">
-      <div className="text-[11px] uppercase tracking-wide text-ink-400">{label}</div>
-      <div className="truncate font-semibold text-ink-100">{value || '—'}</div>
     </div>
   )
 }
