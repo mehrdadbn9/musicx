@@ -16,7 +16,7 @@ import {
 import { UrlForm } from './components/UrlForm'
 import { CollectionView } from './components/CollectionView'
 import { CollectionSkeleton } from './components/CollectionSkeleton'
-import { SearchResults } from './components/SearchResults'
+import { SearchResults, type Tab } from './components/SearchResults'
 import { ArtistView } from './components/ArtistView'
 import { DownloadsDock } from './components/DownloadsDock'
 import { PlayerBar, NowPlaying } from './components/PlayerBar'
@@ -145,6 +145,32 @@ function Shell() {
   // a boolean over the top of everything rather than another View.
   const [libraryOpen, setLibraryOpen] = useState(false)
   const [libraryTab, setLibraryTab] = useState<'tracks' | 'playlists' | 'liked'>('tracks')
+  // User's preferred order of the result-type filter tabs (All / Tracks /
+  // Artists / Albums / Playlists). Persisted so a reorder sticks across
+  // searches and reloads. Defaults to the canonical order.
+  const [tabOrder, setTabOrder] = useState<Tab[]>(() => {
+    try {
+      const saved = localStorage.getItem('musicx:tabOrder')
+      if (saved) {
+        const parsed = JSON.parse(saved) as Tab[]
+        const base: Tab[] = ['all', 'track', 'artist', 'album', 'playlist']
+        // Keep only known kinds, in saved order, then append any missing.
+        const known = parsed.filter((t) => base.includes(t))
+        return [...known, ...base.filter((t) => !known.includes(t))]
+      }
+    } catch {
+      /* ignore malformed storage */
+    }
+    return ['all', 'track', 'artist', 'album', 'playlist']
+  })
+  const persistTabOrder = (next: Tab[]) => {
+    setTabOrder(next)
+    try {
+      localStorage.setItem('musicx:tabOrder', JSON.stringify(next))
+    } catch {
+      /* ignore */
+    }
+  }
   // Deep link in the address bar (?url= / ?artist= / ?q=), captured before
   // any effect rewrites the query string.
   const [initialParams] = useState(() => new URLSearchParams(window.location.search))
@@ -664,6 +690,8 @@ function Shell() {
                 onLoadMore={loadMore}
                 onPick={handlePick}
                 onSearchQuery={handleSubmit}
+                tabOrder={tabOrder}
+                onReorderTabs={persistTabOrder}
               />
             )}
             {view.type === 'artist' && (

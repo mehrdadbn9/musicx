@@ -24,6 +24,10 @@ interface Props {
   onPick: (result: SearchResult) => void
   /** Search a bare query — what a recommendation row becomes when clicked. */
   onSearchQuery: (query: string) => void
+  /** User's preferred left-to-right order of the filter tabs. */
+  tabOrder?: Tab[]
+  /** Called when the user drags to reorder the filter tabs. */
+  onReorderTabs?: (next: Tab[]) => void
 }
 
 const SOURCE_META: Record<Source, { label: string; dot: string }> = {
@@ -42,7 +46,7 @@ const KINDS = [
   { kind: 'playlist', label: 'Playlists', noun: 'playlist', icon: ListMusic, preview: 4 },
 ] as const
 
-type Tab = 'all' | ResultKind
+export type Tab = 'all' | ResultKind
 
 /** Index handed to the CSS stagger (`.stagger > *` reads --i). */
 const stagger = (i: number) => ({ '--i': i }) as CSSProperties
@@ -237,6 +241,8 @@ export function SearchResults({
   onLoadMore,
   onPick,
   onSearchQuery,
+  tabOrder,
+  onReorderTabs,
 }: Props) {
   const [tab, setTab] = useState<Tab>('all')
   // Local drag-reorder of the track list. Stored as an ordered list of
@@ -244,6 +250,18 @@ export function SearchResults({
   // underlying results change so a fresh search starts un-reordered.
   const [trackOrder, setTrackOrder] = useState<string[] | null>(null)
   useEffect(() => setTrackOrder(null), [results])
+  // Reorderable filter tabs (All / Tracks / Artists / ...). The order comes
+  // from the parent (persisted preference); this hook drives the drag.
+  const orderedKinds = (tabOrder ?? ['all', 'track', 'artist', 'album', 'playlist']).filter(
+    (k) => k === 'all' || (grouped.get(k) ?? []).length > 0,
+  )
+  const tabDrag = usePointerDrag(orderedKinds.length, (from, to) => {
+    if (!onReorderTabs) return
+    const next = [...orderedKinds]
+    const [moved] = next.splice(from, 1)
+    next.splice(to, 0, moved)
+    onReorderTabs(next)
+  })
 
   const grouped = useMemo(() => {
     const map = new Map<ResultKind, SearchResult[]>()
@@ -292,38 +310,47 @@ export function SearchResults({
         aria-label="Filter results"
         className="flex flex-wrap items-center gap-1.5 border-b border-ink-800 px-4 py-3"
       >
-        {(
-          [
-            { kind: 'all', label: 'All', count: results.length },
-            ...sections.map(({ kind, label }) => ({
-              kind,
-              label,
-              count: grouped.get(kind)!.length,
-            })),
-          ] as { kind: Tab; label: string; count: number }[]
-        ).map(({ kind, label, count }) => (
-          <button
-            key={kind}
-            onClick={() => setTab(kind)}
-            aria-pressed={tab === kind}
-            className={clsx(
-              'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-mini font-medium transition duration-200 active:scale-[0.97]',
-              tab === kind
-                ? 'bg-lime-flash text-lime-ink'
-                : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100',
-            )}
-          >
-            {label}
-            <span
+        {orderedKinds.map((kind, i) => {
+          const label = kind === 'all' ? 'All' : KINDS.find((k) => k.kind === kind)?.label ?? kind
+          const count = kind === 'all' ? results.length : grouped.get(kind as ResultKind)?.length ?? 0
+          return (
+            <button
+              key={kind}
+              ref={tabDrag.setRowRef(i)}
+              {...tabDrag.rowProps(i)}
+              onClick={() => setTab(kind)}
+              aria-pressed={tab === kind}
               className={clsx(
-                'text-micro tabular-nums',
-                tab === kind ? 'text-lime-ink/70' : 'text-ink-400',
+                'flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-mini font-medium transition duration-200 active:scale-[0.97]',
+                tab === kind
+                  ? 'bg-lime-flash text-lime-ink'
+                  : 'text-ink-300 hover:bg-ink-800 hover:text-ink-100',
+                tabDrag.dragIndex === i && 'opacity-40',
               )}
             >
-              {count}
-            </span>
-          </button>
-        ))}
+              {onReorderTabs && (
+                <span
+                  {...tabDrag.handleProps(i)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="cursor-grab select-none text-ink-500 hover:text-ink-300 active:cursor-grabbing touch-none"
+                  title="Drag to reorder tabs"
+                  aria-label="Drag to reorder tabs"
+                >
+                  ⠿
+                </span>
+              )}
+              {label}
+              <span
+                className={clsx(
+                  'text-micro tabular-nums',
+                  tab === kind ? 'text-lime-ink/70' : 'text-ink-400',
+                )}
+              >
+                {count}
+              </span>
+            </button>
+          )
+        })}
       </nav>
 
       {sections
