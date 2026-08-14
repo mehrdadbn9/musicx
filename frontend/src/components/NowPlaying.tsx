@@ -17,6 +17,7 @@ import {
 } from '../lib/player'
 import { usePlayer } from '../lib/usePlayer'
 import { useLyrics } from '../lib/lyrics'
+import { usePointerDrag } from '../lib/usePointerDrag'
 
 /** Full-screen Now Playing overlay — the "Spotify" expanded view.
  *  Opens when clicking the player bar, closes on drag-down or backdrop click. */
@@ -26,8 +27,7 @@ export function NowPlaying({ open, onClose }: { open: boolean; onClose: () => vo
   const [dragY, setDragY] = useState(0)
   const [lyricsOpen, setLyricsOpen] = useState(true)
   const [queueOpen, setQueueOpen] = useState(false)
-  const [dragIndex, setDragIndex] = useState<number | null>(null)
-  const [overIndex, setOverIndex] = useState<number | null>(null)
+  const queueDrag = usePointerDrag(state.queue.length, (from, to) => reorderQueue(from, to))
   const lyrics = useLyrics(state.queue[state.index]?.title || '', state.queue[state.index]?.artist || '')
   const progressRef = useRef<HTMLDivElement>(null)
   const handleRef = useRef<HTMLDivElement>(null)
@@ -201,20 +201,8 @@ export function NowPlaying({ open, onClose }: { open: boolean; onClose: () => vo
                         return (
                           <li
                             key={item.id}
-                            onDragOver={(e) => {
-                              e.preventDefault()
-                              setOverIndex(i)
-                            }}
-                            onDrop={(e) => {
-                              if (dragIndex !== null && dragIndex !== i) reorderQueue(dragIndex, i)
-                              setDragIndex(null)
-                              setOverIndex(null)
-                              e.preventDefault()
-                            }}
-                            onDragEnd={() => {
-                              setDragIndex(null)
-                              setOverIndex(null)
-                            }}
+                            ref={queueDrag.setRowRef(i)}
+                            {...queueDrag.rowProps(i)}
                             className={clsx(
                               'flex items-center gap-3 rounded-btn border p-2 transition',
                               isCurrent
@@ -222,18 +210,13 @@ export function NowPlaying({ open, onClose }: { open: boolean; onClose: () => vo
                                 : item.suggested
                                   ? 'border-lime-flash/30 bg-lime-flash/5'
                                   : 'border-ink-800 bg-ink-900 hover:border-ink-700',
-                              dragIndex === i && 'opacity-40',
-                              overIndex === i && dragIndex !== null && 'border-lime-flash'
+                              queueDrag.dragIndex === i && 'opacity-40',
+                              queueDrag.overIndex === i && queueDrag.dragIndex !== null && 'border-lime-flash'
                             )}
                           >
                             <span
-                              draggable
-                              onDragStart={(e) => {
-                                e.dataTransfer.effectAllowed = 'move'
-                                e.dataTransfer.setData('text/plain', String(i))
-                                setDragIndex(i)
-                              }}
-                              className="cursor-grab active:cursor-grabbing text-ink-600 hover:text-ink-300 select-none px-1"
+                              {...queueDrag.handleProps(i)}
+                              className="cursor-grab active:cursor-grabbing text-ink-600 hover:text-ink-300 select-none px-1 touch-none"
                               title="Drag to reorder"
                               aria-label="Drag to reorder"
                             >

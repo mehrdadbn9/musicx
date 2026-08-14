@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import clsx from 'clsx'
 import type { ResultKind, SearchResult, Source } from '../lib/api'
+import { usePointerDrag } from '../lib/usePointerDrag'
 import { QuickDownload } from './QuickDownload'
 import { SimilarSongs } from './SimilarSongs'
 
@@ -72,45 +73,26 @@ function TrackList({
 }) {
   // Which track's "more like this" panel is open, keyed by dedup_key.
   const [expanded, setExpanded] = useState<string | null>(null)
-  const [dragIndex, setDragIndex] = useState<number | null>(null)
-  const [overIndex, setOverIndex] = useState<number | null>(null)
+  const drag = usePointerDrag(items.length, (from, to) => onReorder?.(from, to))
   return (
     <ul className="stagger">
       {items.map((item, i) => (
         <li
           key={item.dedup_key}
-          onDragOver={(e) => {
-            if (!onReorder) return
-            e.preventDefault()
-            setOverIndex(i)
-          }}
-          onDrop={(e) => {
-            if (onReorder && dragIndex !== null && dragIndex !== i) onReorder(dragIndex, i)
-            setDragIndex(null)
-            setOverIndex(null)
-            e.preventDefault()
-          }}
-          onDragEnd={() => {
-            setDragIndex(null)
-            setOverIndex(null)
-          }}
+          ref={drag.setRowRef(i)}
+          {...drag.rowProps(i)}
           style={stagger(i)}
           className={clsx(
             'group transition-colors hover:bg-ink-800/60 focus-within:bg-ink-800/60',
-            dragIndex === i && 'opacity-40',
-            overIndex === i && dragIndex !== null && 'outline-1 outline-lime-flash',
+            drag.dragIndex === i && 'opacity-40',
+            drag.overIndex === i && drag.dragIndex !== null && 'outline-1 outline-lime-flash',
           )}
         >
           <div className="flex items-center gap-3 pe-5">
             {onReorder && (
               <span
-                draggable
-                onDragStart={(e) => {
-                  e.dataTransfer.effectAllowed = 'move'
-                  e.dataTransfer.setData('text/plain', String(i))
-                  setDragIndex(i)
-                }}
-                className="cursor-grab select-none px-1 text-ink-600 hover:text-ink-300 active:cursor-grabbing"
+                {...drag.handleProps(i)}
+                className="cursor-grab select-none px-1 text-ink-600 hover:text-ink-300 active:cursor-grabbing touch-none"
                 title="Drag to reorder"
                 aria-label="Drag to reorder"
               >
