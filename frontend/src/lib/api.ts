@@ -173,8 +173,8 @@ export interface DJResponse {
   results: SearchResult[]
   has_more: boolean
 }
-export async function apiDJ(vibe: string): Promise<DJResponse> {
-  const { data } = await client.get<DJResponse>('/dj', { params: { q: vibe } })
+export async function apiDJ(vibe: string, wait = false): Promise<DJResponse> {
+  const { data } = await client.get<DJResponse>('/dj', { params: { q: vibe, wait: wait ? 1 : 0 } })
   return { ...data, results: data.results.map(localizeResult) }
 }
 

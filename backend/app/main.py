@@ -285,11 +285,13 @@ import json as _json
 import urllib.request as _urllib_request
 import urllib.error as _urllib_error
 
-_DJ_MODEL_CANDIDATES = [
-    "liquid/lfm-2.5-2.6b:free",
-    "openai/gpt-oss-20b:free",
-    "nvidia/nemotron-nano-9b-v2:free",
-]
+# One free model, short timeout. The free tier is rate-limited and slow, so
+# we never block on it: if it doesn't answer with valid JSON in time we fall
+# back to the offline classifier (sub-second). A tiny cache keeps repeats
+# instant.
+_DJ_MODEL = "liquid/lfm-2.5-2.6b:free"
+_DJ_TIMEOUT = 8
+_DJ_CACHE: dict[str, dict] = {}
 
 
 def _dj_classify_offline(vibe: str) -> dict:
@@ -315,7 +317,10 @@ def _dj_classify_offline(vibe: str) -> dict:
             "eq": "Punchy low-end" if energy == "high" else "Soft highs" if energy == "low" else "Balanced"}
 
 
-def _dj_classify_llm(vibe: str) -> dict | None:
+def _dj_classify_llm(vibe: str, timeout: int = _DJ_TIMEOUT) -> dict | None:
+    cached = _DJ_CACHE.get(vibe)
+    if cached is not None:
+        return cached
     key = os.environ.get("HERMES_CUSTOM_OPENROUTER_AI_API_KEY") or os.environ.get("OPENROUTER_API_KEY")
     if not key:
         return None
@@ -325,49 +330,69 @@ def _dj_classify_llm(vibe: str) -> dict | None:
         "search query for a music catalog), bpm (string), eq (short tip). "
         f"Vibe: {vibe!r}. Respond with JSON only, no prose."
     )
-    for model in _DJ_MODEL_CANDIDATES:
-        body = _json.dumps({
-            "model": model,
-            "messages": [{"role": "user", "content": prompt}],
-            "max_tokens": 700,
-        }).encode()
+    body = _json.dumps({
+        "model": _DJ_MODEL,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 250,
+    }).encode()
+
+    def _call():
         req = _urllib_request.Request(
             "https://openrouter.ai/api/v1/chat/completions",
             data=body,
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
         )
-        try:
-            with _urllib_request.urlopen(req, timeout=45) as r:
-                msg = _json.load(r)["choices"][0]["message"]
-                text = msg.get("content") or msg.get("reasoning") or ""
-        except Exception:
-            continue
-        m = re.search(r"\{.*\}", text, re.S)
-        if not m:
-            continue
-        try:
-            data = _json.loads(m.group(0))
-        except Exception:
-            continue
-        if isinstance(data.get("query"), str) and data["query"].strip():
-            return {
-                "energy": data.get("energy", "mid"),
-                "genres": data.get("genres") or ["mixed"],
-                "query": data["query"].strip(),
-                "bpm": str(data.get("bpm", "")),
-                "eq": str(data.get("eq", "")),
-                "model": model,
-            }
+        with _urllib_request.urlopen(req, timeout=timeout) as r:
+            msg = _json.load(r)["choices"][0]["message"]
+            return msg.get("content") or msg.get("reasoning") or ""
+
+    try:
+        with ThreadPoolExecutor(max_workers=1) as ex:
+            text = ex.submit(_call).result(timeout=timeout)
+    except Exception:
+        return None
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        return None
+    try:
+        data = _json.loads(text[start:end + 1])
+    except Exception:
+        return None
+    if isinstance(data.get("query"), str) and data["query"].strip():
+        result = {
+            "energy": data.get("energy", "mid"),
+            "genres": data.get("genres") or ["mixed"],
+            "query": data["query"].strip(),
+            "bpm": str(data.get("bpm", "")),
+            "eq": str(data.get("eq", "")),
+            "model": _DJ_MODEL,
+        }
+        _DJ_CACHE[vibe] = result
+        return result
     return None
 
 
 @app.get("/api/dj")
-def dj(request: Request, q: str) -> dict:
+def dj(request: Request, q: str, wait: bool = False) -> dict:
     q = (q or "").strip()
     if not q:
         raise HTTPException(status_code=400, detail="Empty vibe")
     limits.enforce("search", request)
-    profile = _dj_classify_llm(q) or _dj_classify_offline(q)
+    # Default: instant offline mix. With wait=true we block on the free LLM
+    # (up to ~20s) so the user can explicitly ask for the AI-enhanced mix;
+    # the result is cached so a later non-wait call returns it instantly.
+    if wait:
+        profile = _dj_classify_llm(q, timeout=25) or _dj_classify_offline(q)
+    else:
+        profile = _dj_classify_offline(q)
+        # Kick the LLM in the background so a later wait/refresh reuses it.
+        if os.environ.get("OPENROUTER_API_KEY") or os.environ.get("HERMES_CUSTOM_OPENROUTER_AI_API_KEY"):
+            def _warm():
+                try:
+                    _dj_classify_llm(q)
+                except Exception:
+                    pass
+            ThreadPoolExecutor(max_workers=1).submit(_warm)
     try:
         results, has_more = search_any(profile["query"], 0)
     except ProviderError as exc:
@@ -377,6 +402,12 @@ def dj(request: Request, q: str) -> dict:
         "results": [asdict(r) | {"dedup_key": dedup_key(r)} for r in results],
         "has_more": has_more,
     }
+
+
+@app.get("/api/dj_wait")
+def dj_wait(request: Request, q: str) -> dict:
+    """Blocking variant: waits for the free LLM before returning."""
+    return dj(request, q, wait=True)
 
 
 @app.get("/api/artist/{artist_id}")

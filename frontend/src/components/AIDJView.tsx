@@ -52,16 +52,22 @@ export function AIDJView() {
   const [error, setError] = useState<string | null>(null)
   const [model, setModel] = useState<string | null>(null)
 
-  const generate = async (text?: string) => {
+  const [enhancing, setEnhancing] = useState(false)
+
+  const generate = async (text?: string, enhance = false) => {
     const q = (text ?? vibe).trim()
     if (!q) return
     setVibe(q)
-    setLoading(true)
+    if (enhance) setEnhancing(true)
+    else {
+      setLoading(true)
+      setEnhancing(false)
+      setProfile(null)
+      setTracks([])
+    }
     setError(null)
-    setProfile(null)
-    setTracks([])
     try {
-      const res = await apiDJ(q)
+      const res = await apiDJ(q, enhance)
       setProfile(res.profile)
       setTracks(res.results.filter((r) => r.kind === 'track').slice(0, 24))
       setModel((res.profile.model as string) ?? null)
@@ -69,8 +75,11 @@ export function AIDJView() {
       setError(e instanceof Error ? e.message : 'Could not generate a mix')
     } finally {
       setLoading(false)
+      setEnhancing(false)
     }
   }
+
+  const enhance = () => generate(vibe, true)
 
   const playMix = () => {
     const items = tracks.map(resultToItem)
@@ -85,7 +94,7 @@ export function AIDJView() {
           <Wand2 className="size-5" /> AI Vibe DJ
         </div>
         <p className="mt-1 text-sm text-ink-300">
-          Describe a mood or moment. A free on-device model reads the vibe and builds a real mix from the catalog.
+          Describe a mood or moment. A free AI model reads the vibe and builds a real mix from the catalog — instantly, or enhanced by a free LLM.
         </p>
         <div className="mt-4 flex items-end gap-2">
           <textarea
@@ -98,10 +107,18 @@ export function AIDJView() {
           />
           <button
             onClick={() => generate()}
-            disabled={loading || !vibe.trim()}
+            disabled={loading || enhancing || !vibe.trim()}
             className="dj-go flex items-center gap-1.5 rounded-xl bg-accent px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
           >
             <Sparkles className="size-4" /> {loading ? 'Mixing…' : 'Generate mix'}
+          </button>
+          <button
+            onClick={enhance}
+            disabled={loading || enhancing || !vibe.trim()}
+            title="Wait for the free LLM to craft a smarter mix (takes ~15-20s)"
+            className="dj-go flex items-center gap-1.5 rounded-xl bg-ink-800 px-4 py-3 text-sm font-bold text-ink-100 ring-1 ring-ink-700 hover:ring-accent disabled:opacity-50"
+          >
+            <Wand2 className="size-4" /> {enhancing ? 'Thinking…' : '✨ Enhance with AI'}
           </button>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
@@ -124,6 +141,11 @@ export function AIDJView() {
       {loading && (
         <div className="mt-6 flex items-center justify-center gap-2 text-ink-300">
           <AudioLines className="size-5 animate-pulse" /> Reading the vibe…
+        </div>
+      )}
+      {enhancing && (
+        <div className="mt-6 flex items-center justify-center gap-2 text-ink-300">
+          <Wand2 className="size-5 animate-pulse" /> Thinking with the free AI model… (~15-20s)
         </div>
       )}
 
