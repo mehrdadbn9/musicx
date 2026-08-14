@@ -1022,7 +1022,7 @@ function RightRail({ tracks, playlists }: { tracks: number; playlists: number })
           ].map(([label, keys]) => (
             <div key={label} className="flex items-center justify-between gap-3">
               <dt className="text-ink-300">{label}</dt>
-              <dd className={kbd}>{keys}</dd>
+              <dd className={`${kbd} whitespace-nowrap`}>{keys}</dd>
             </div>
           ))}
         </dl>
