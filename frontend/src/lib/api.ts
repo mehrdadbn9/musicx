@@ -86,6 +86,9 @@ export interface SearchResult {
   /** Server-computed identity (kind + name + artist). The backend dedupes
    *  within a page; the client reuses this key to dedupe across pages. */
   dedup_key: string
+  /** 30s preview clip when the source exposes one (Deezer). Lets the player
+   *  fall back to a playable clip when full-length extraction is blocked. */
+  preview_url?: string | null
 }
 
 export interface SearchPage {

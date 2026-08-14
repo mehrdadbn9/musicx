@@ -51,6 +51,7 @@ def _track_result(item: dict) -> SearchResult:
         name=item.get("title", ""),
         subtitle=(item.get("artist") or {}).get("name", ""),
         cover_url=(item.get("album") or {}).get("cover_medium"),
+        preview_url=item.get("preview") or None,
     )
 
 

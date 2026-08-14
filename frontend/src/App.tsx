@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { ArrowLeft, ArrowRight, Library, Link2 as LinkIcon, Search, Heart } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Library, Link2 as LinkIcon, Search, Heart, Wand2 } from 'lucide-react'
 import clsx from 'clsx'
 import {
   apiError,
@@ -23,6 +23,7 @@ import { PlayerBar, NowPlaying } from './components/PlayerBar'
 import { usePlayer } from './lib/usePlayer'
 import { setNowPlayingOpen, playQueue } from './lib/player'
 import { LibraryView } from './components/LibraryView'
+import { AIDJView } from './components/AIDJView'
 import { getLibraryStatus } from './lib/library'
 import { QualityPicker } from './components/QualityPicker'
 import { RecentSearches } from './components/RecentSearches'
@@ -144,6 +145,7 @@ function Shell() {
   // reached from the header and returned from with the same button, so it is
   // a boolean over the top of everything rather than another View.
   const [libraryOpen, setLibraryOpen] = useState(false)
+  const [aiDjOpen, setAiDjOpen] = useState(false)
   const [libraryTab, setLibraryTab] = useState<'tracks' | 'playlists' | 'liked'>('tracks')
   // User's preferred order of the result-type filter tabs (All / Tracks /
   // Artists / Albums / Playlists). Persisted so a reorder sticks across
@@ -469,10 +471,12 @@ function Shell() {
       <Sidebar
         landing={landing}
         libraryOpen={libraryOpen}
+        aiDjOpen={aiDjOpen}
         count={libraryStatus?.tracks ?? 0}
         onHome={goHome}
         onLibrary={() => { setLibraryTab('tracks'); setLibraryOpen((v) => !v); }}
         onLiked={() => { setLibraryTab('liked'); setLibraryOpen(true); }}
+        onAiDj={() => { setAiDjOpen((v) => !v); setLibraryOpen(false) }}
       />
       <div className="flex min-w-0 flex-1 flex-col">
       <header className="mx-auto flex w-full max-w-3xl items-center gap-2.5 px-5 pt-[calc(2rem+var(--safe-top))] lg:hidden">
@@ -501,6 +505,8 @@ function Shell() {
           <div className="pt-6">
             <LibraryView initialTab={libraryTab} onTabChange={setLibraryTab} />
           </div>
+        ) : aiDjOpen ? (
+          <AIDJView />
         ) : sharedArrival ? (
           <section className="pt-10 pb-8">
             <div className="animate-fade-up rounded-panel border border-lime-flash/25 bg-lime-flash/[0.06] p-4 sm:p-5">
@@ -775,17 +781,21 @@ const SOURCES = [
 function Sidebar({
   landing,
   libraryOpen,
+  aiDjOpen,
   count,
   onHome,
   onLibrary,
   onLiked,
+  onAiDj,
 }: {
   landing: boolean
   libraryOpen: boolean
+  aiDjOpen: boolean
   count: number
   onHome: () => void
   onLibrary: () => void
   onLiked: () => void
+  onAiDj: () => void
 }) {
   return (
     <aside className="sidebar-surface sticky top-0 hidden h-screen w-64 shrink-0 flex-col px-4 py-6 lg:flex">
@@ -828,6 +838,14 @@ function Sidebar({
         >
           <Heart className="size-4" aria-hidden />
           Liked
+        </button>
+        <button
+          onClick={onAiDj}
+          aria-pressed={aiDjOpen}
+          className={clsx('nav-item', aiDjOpen && 'nav-item-active')}
+        >
+          <Wand2 className="size-4" aria-hidden />
+          AI DJ
         </button>
       </nav>
 

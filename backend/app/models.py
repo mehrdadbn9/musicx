@@ -53,3 +53,4 @@ class SearchResult:
     cover_url: str | None
     url: str
     source: str = "deezer"  # deezer | itunes | youtube | soundcloud
+    preview_url: str | None = None  # 30s preview clip, when the source exposes one
